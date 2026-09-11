@@ -12,12 +12,16 @@ from rekas.optimizers import RMSProp
 
 print("LOAD DATA")
 data = load_breast_cancer()
-X, y = data.data, data.target
+X, y = data.data, data.target 
+X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.2, random_state=42 ) 
+
+print(f"Training samples: {len(X_train)} | Test samples: {len(X_test)}")
+print(f"Input Features: {X_train.shape[1]}\n") 
 
 scaler_x = StandardScaler()
-X_scaled = scaler_x.fit_transform(X)
 
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+X_train = scaler_x.fit_transform(X_train)
+X_test = scaler_x.transform(X_test)
 
 print(f"Training samples: {len(X_train)} | Test samples: {len(X_test)}")
 print(f"Input Features: {X_train.shape[1]}\n")
