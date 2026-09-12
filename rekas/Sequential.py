@@ -1,9 +1,13 @@
 import numpy as np
 from rekas.templates import Layer
 from rekas.layers import Input
+import pickle 
 
 class Sequential:
-  def __init__(self, layers):
+  count = 0
+  def __init__(self, layers, name=f'Sequential {count+1}'):
+    count += 1
+    self.name = name
     if (not isinstance(layers[0], Input)):
       raise TypeError("First layer needs to be Input")
     self.layers = layers
@@ -44,3 +48,68 @@ class Sequential:
 
       predictions.append(z.squeeze())
     return np.array(predictions)
+  
+  def summary(self):
+      print(f'Model: "{self.name}"')
+      print("=" * 65)
+
+      print(f'{"Layer":<25} {"Output Shape":<20} {"Parameters":>15}')
+      print("-" * 65)
+
+      total_params = 0
+      trainable_params = 0
+
+      for i, layer in enumerate(self.layers):
+          layer_name = layer.__class__.__name__
+
+          if isinstance(layer, Input):
+              output_shape = f'({layer.units},)'
+              params = 0
+
+          elif isinstance(layer, Layer):
+              output_shape = f'({layer.units},)'
+
+              weight_idx = self.nonacts.index(layer) - 1
+
+              if weight_idx >= 0:
+                  params = (
+                      self.weights[weight_idx].size +
+                      self.biases[weight_idx].size
+                  )
+              else:
+                  params = 0
+
+              trainable_params += params
+
+          else:
+              output_shape = f'({layer.units},)' if hasattr(layer, 'units') else '-'
+              params = 0
+
+          total_params += params
+
+          print(f'{layer_name:<25} {output_shape:<20} {params:>15,}')
+
+      print("=" * 65)
+      print(f'Total parameters:     {total_params:,}')
+      print(f'Trainable parameters: {trainable_params:,}')
+  
+  def save(self, path):
+     data = {
+        "name": self.name,
+        "layers": self.layers,
+        "weights": self.weights,
+        "biases": self.biases
+      }
+     
+     with open(path, 'wb') as f:
+        pickle.dump(data, f)
+  
+  @classmethod
+  def load(cls, path):
+     with open(path, 'rb') as f:
+        data = pickle.load(f)
+     model = cls(data['layers'], data['name']+'_loaded')
+     model.weights = data['weights']
+     model.biases = data['biases']
+
+     return model
