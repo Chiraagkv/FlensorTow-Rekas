@@ -1,13 +1,17 @@
 import numpy as np
 from rekas.templates import Layer
 from rekas.layers import Input
+from rekas.initializations import *
 import pickle 
 
 class Sequential:
   count = 0
-  def __init__(self, layers, name=f'Sequential {count+1}'):
-    count += 1
+  def __init__(self, layers, name=None, initialization='he_normal'):
+    self.initer = initialization
+    Sequential.count += 1
     self.name = name
+    if name is None:
+      name = f'Sequential {Sequential.count}'
     if (not isinstance(layers[0], Input)):
       raise TypeError("First layer needs to be Input")
     self.layers = layers
@@ -18,7 +22,16 @@ class Sequential:
       if isinstance(i, Layer):
         self.nonacts.append(i)
     for i in range(len(self.nonacts)-1):
-      w_i = np.random.randn(self.nonacts[i+1].units, self.nonacts[i].units) * np.sqrt(2.0 / self.nonacts[i].units) # He initialization of weights in ReLU networks
+      if initialization == 'he_normal':
+         initer = HeNormal()
+      elif initialization == 'xavier_normal':
+         initer = XavierNormal()
+      elif initialization == 'normal':
+         initer = RandomNormal()
+      else:
+         raise ValueError(f"Invalid initialization strategy: {initialization}")
+      shape = (self.nonacts[i+1].units, self.nonacts[i].units)
+      w_i = initer.initialize(shape)
       b_i = np.zeros((self.nonacts[i+1].units, 1))
       self.weights.append(w_i)
       self.biases.append(b_i)
@@ -96,6 +109,7 @@ class Sequential:
   def save(self, path):
      data = {
         "name": self.name,
+        "initer": self.initer,
         "layers": self.layers,
         "weights": self.weights,
         "biases": self.biases
@@ -108,7 +122,7 @@ class Sequential:
   def load(cls, path):
      with open(path, 'rb') as f:
         data = pickle.load(f)
-     model = cls(data['layers'], data['name']+'_loaded')
+     model = cls(data['layers'], data['name']+'_loaded', data['initer'])
      model.weights = data['weights']
      model.biases = data['biases']
 

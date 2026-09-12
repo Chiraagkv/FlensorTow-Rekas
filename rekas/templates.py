@@ -23,3 +23,7 @@ class Optimizer:
 
   def update(self, X, y, weights, biases, loss_fn, layers, nonacts):
     pass
+
+class Initializer:
+  def initialize(self, shape):
+    raise NotImplementedError
